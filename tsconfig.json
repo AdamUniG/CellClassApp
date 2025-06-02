@@ -1,0 +1,22 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+   "skipLibCheck": true,           // ← don’t type-check deps’ d.ts files
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+      
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+ "exclude": [
+   "node_modules"                   // ← don’t even load configs or sources there
+ ]
+}
