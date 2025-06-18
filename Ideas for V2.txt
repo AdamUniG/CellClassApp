@@ -1,0 +1,2 @@
+1. fix logo placement
+2. rule bar drift

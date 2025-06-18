@@ -28,8 +28,8 @@ export default function RootLayout() {
 
   // ─── 6) Now render your app with theme & routing ───────
   return (
-      <Stack screenOptions={{ headerShown: false }} initialRouteName="splash">
-        <Stack.Screen name="splash" />
+      <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
+        <Stack.Screen name="index" />
         <Stack.Screen name="login"  />
         <Stack.Screen name="label"  />
         <Stack.Screen name="+not-found" />

@@ -5,8 +5,13 @@ import { fb } from '@/src/firebase';
 
 import {
   collection,
+  deleteDoc,
   doc,
+  getDocs,
+  limit,
+  query,
   serverTimestamp,
+  where,
   writeBatch
 } from 'firebase/firestore';
 
@@ -24,11 +29,10 @@ async function getDb(): Promise<SQLiteDatabase> {
 }
 
 // ─── 3. Types ────────────────────────────────────────────────────────────
-export type Category = 'apple' | 'banana' | 'Avo' | 'sabres';
+export type Category = 'Oli' | 'OPC' | 'Astro' | 'More'| 'Multiple' | 'Unknown' | 'Nothing' | 'Back';
 
 export interface ImageRow {
   picture_id: string;
-  file_name:  string;
   category:   Category;
 }
 
@@ -49,7 +53,6 @@ export async function bootstrap(): Promise<void> {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS pictures (
       picture_id TEXT PRIMARY KEY,
-      file_name  TEXT,
       category   TEXT
     );
   `);
@@ -60,7 +63,8 @@ export async function bootstrap(): Promise<void> {
       picture_id  TEXT,
       category    TEXT,
       synced      INTEGER DEFAULT 0,
-      created_at  INTEGER DEFAULT (strftime('%s','now'))
+      created_at  INTEGER DEFAULT (strftime('%s','now')),
+      FOREIGN KEY(picture_id) REFERENCES pictures(picture_id)
     );
   `);
 
@@ -70,13 +74,13 @@ export async function bootstrap(): Promise<void> {
   );
   if (!first || first.n === 0) {
     await db.execAsync('BEGIN;');
-    for (const { id, file_name, category } of IMAGES) {
+    for (const { id } of IMAGES) {
       await db.runAsync(
-        `INSERT INTO pictures (picture_id, file_name, category)
-         VALUES (?, ?, ?);`,
+        `INSERT INTO pictures (picture_id, category)
+         VALUES (?, ?);`,
         id,
-        file_name,
-        category
+        null
+        
       );
     }
     await db.execAsync('COMMIT;');
@@ -84,44 +88,23 @@ export async function bootstrap(): Promise<void> {
   }
 }
 
-// ─── 5. Fetch one balanced, unlabelled image ───────────────────────────
+// ─── 5. Fetch one unlabelled image ───────────────────────────
 export async function getNextPicture(
   user_id: string
 ): Promise<ImageRow | null> {
   const db = await getDb();
 
-  // 1) count labels per category
-  const counts = await db.getAllAsync<{ category: string; cnt: number }>(
-    `SELECT category, COUNT(*) AS cnt
-       FROM labels_local
-      WHERE user_id = ?
-      GROUP BY category;`,
-    user_id
-  );
-  const map: Record<Category, number> = {} as any;
-  counts.forEach(r => {
-    map[r.category as Category] = r.cnt;
-  });
-
-  // 2) pick the least-labelled category
-  const allCats: Category[] = ['apple','banana','Avo','sabres'];
-  const minCnt = Math.min(...allCats.map(c => map[c] ?? 0));
-  const pool = allCats.filter(c => (map[c] ?? 0) === minCnt);
-  const chosen = pool[Math.floor(Math.random() * pool.length)];
-
-  // 3) fetch one random unlabelled image in that category
   const rows = await db.getAllAsync<ImageRow>(
-    `SELECT p.picture_id, p.file_name, p.category
+    `SELECT p.picture_id, p.category
        FROM pictures p
   LEFT JOIN labels_local l
          ON l.picture_id = p.picture_id
         AND l.user_id    = ?
-      WHERE p.category = ?
-        AND l.picture_id IS NULL
+      WHERE l.picture_id IS NULL
       ORDER BY RANDOM()
       LIMIT 1;`,
     user_id,
-    chosen
+    
   );
 
   return rows[0] ?? null;
@@ -133,6 +116,7 @@ export async function saveLabel(
   picture_id: string,
   category: Category
 ): Promise<void> {
+  if (category === 'More' || category === 'Back') return;
   const db = await getDb();
   await db.runAsync(
     `INSERT INTO labels_local (user_id, picture_id, category)
@@ -183,10 +167,55 @@ export async function syncToFirestore(user_id: string): Promise<void> {
       picture_id: lbl.picture_id,
       category:   lbl.category,
       created_at: serverTimestamp(),
-      _localId:   lbl.label_id
     });
   });
 
   await batch.commit();
   await markSynced(unsynced.map(l => l.label_id));
+}
+export async function deleteLabelLocal(
+  user_id: string,
+  picture_id: string
+): Promise<void> {
+  const db: SQLiteDatabase = await getDb();
+  // Remove the row from your local 'labels_local' table.
+  // Adjust table/column names if yours differ.
+  await db.runAsync(
+    `DELETE FROM labels_local
+       WHERE user_id = ?
+         AND picture_id = ?;`,
+    user_id,
+    picture_id
+  );
+}
+export async function deleteLabelFromFirestore(
+  user_id: string,
+  picture_id: string
+): Promise<void> {
+  // 1) Build a Firestore query: look in "labels_master" for
+  //    documents where user_id == user_id AND picture_id == picture_id.
+  //    We only expect one such document (limit 1).
+  const col = collection(fb.firestore, 'labels_master');
+  const q = query(
+    col,
+    where('user_id', '==', user_id),
+    where('picture_id', '==', picture_id),
+    limit(1)
+  );
+
+  // 2) Execute the query to find the matching doc
+  const querySnapshot = await getDocs(q);
+
+  if (querySnapshot.empty) {
+    // No matching doc found; nothing to delete
+    return;
+  }
+
+  // 3) There should be exactly one document; take its ID
+  const docSnap = querySnapshot.docs[0];
+  const docId = docSnap.id;
+
+  // 4) Delete that document by reference
+  const singleDocRef = doc(fb.firestore, 'labels_master', docId);
+  await deleteDoc(singleDocRef);
 }
