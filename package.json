@@ -13,7 +13,7 @@
     "lint": "expo lint",
     "build:web": "expo export --platform web",
     "predeploy": "npm run build:web",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages --no-jekyll -d dist"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",

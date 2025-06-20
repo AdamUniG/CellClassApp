@@ -5,6 +5,10 @@ import { Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Platform, SafeAreaView, StyleSheet, View } from 'react-native';
 
+const windowHeight = Platform.OS === 'web'
+   ? Dimensions.get('window').height
+   : undefined;
+
 export default function RootLayout() {
   // ─── 1) Load your custom font ─────────────────────────
   const [fontsLoaded] = useFonts({
@@ -29,7 +33,14 @@ export default function RootLayout() {
 
   // ─── 5) Render your app wrapped for web sizing ──────────
   return (
-    <SafeAreaView style={styles.outer}>
+    <SafeAreaView
+          style={[
+            styles.outer,
+            Platform.OS === 'web'
+              ? { width: '100%', height: windowHeight  }  // ⬅️ full browser viewport
+              : { flex: 1 },                        // native fallback
+          ]}
+        >
       <View style={styles.inner}>
         <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
           <Stack.Screen name="index" />
@@ -42,14 +53,15 @@ export default function RootLayout() {
   );
 }
 
-const windowHeight = Platform.OS === 'web'
-   ? Dimensions.get('window').height
-   : undefined;
+
 
 const styles = StyleSheet.create({
   outer: {
-    width: '100%',
-    height: windowHeight ?? '100%',
+    //width: '100%',
+    //height: windowHeight ?? '100%',
+
+    ...(Platform.OS === 'web'? { width: '100%', height: windowHeight }: { flex: 1 }),
+
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -59,7 +71,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     justifyContent: 'space-between',
-    paddingVertical: 16,
     alignSelf: 'center',
   },
 });
