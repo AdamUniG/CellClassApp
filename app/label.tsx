@@ -1,5 +1,5 @@
 // app/label.tsx
-import { Category, deleteLabelFromFirestore, deleteLabelLocal, fetchUnsynced, getNextPicture, saveLabel, syncToFirestore } from '@/src/db';
+import { Category, deleteLabelFromFirestore, deleteLabelLocal, fetchUnsynced, getNextPicture, ImageRow, saveLabel, syncToFirestore } from '@/src/db';
 import { IMAGES } from '@/src/images';
 import { Audio } from 'expo-av';
 import { useLocalSearchParams } from 'expo-router';
@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Image,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -37,10 +38,7 @@ export default function LabelScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [currentCongratsImg, setCurrentCongratsImg] = useState<any>(null);
 
-  const [currentRow, setCurrentRow] = useState<{
-    picture_id: string;
-    category:   Category;
-  } | null>(null);
+  const [currentRow, setCurrentRow] = useState<ImageRow | null>(null);
   const [currentImg, setCurrentImg] = useState<any>(null);
   const [zoomed, setZoomed] = useState(false);
   // history stack
@@ -279,11 +277,13 @@ export default function LabelScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:{ flex:1, backgroundColor:'#FFF', paddingHorizontal:16 },
+  container:{ width: '100%',height: '100%',
+    backgroundColor:'#FFF', paddingHorizontal:16,flexDirection: 'column'},
 
   headerRow:{
+    height: '15%',
     flexDirection:'row', alignItems:'center',
-    justifyContent:'space-between', marginBottom:16
+    justifyContent:'space-between'
   },
    backBtn: {
     paddingHorizontal: 8,
@@ -301,21 +301,24 @@ const styles = StyleSheet.create({
   logo:{ width:100, height:100 },
 
   roiBox:{
-    width:'100%', aspectRatio:1, borderWidth:0,
-    borderRadius:24, justifyContent:'center', alignItems:'center',
-    overflow:'hidden', marginBottom:20
+    height: '55%', width:'100%',
+    borderRadius:24, justifyContent:'center', alignItems:'center'
+    
   },
   roiImg:{ width:'90%', height:'90%' },
 
   grid:{
+    height: '25%',
     flexDirection:'row', flexWrap:'wrap',
-    justifyContent:'space-between', flexGrow:1,
+    justifyContent:'space-between',
     paddingBottom:24
   },
   catBtn:{
-    flexBasis:'47%', height:110, borderRadius:18,
+    flexBasis:'47%',
+    height: Platform.OS === 'web' ? 80 : 110,
+    borderRadius:18,
     alignItems:'center', justifyContent:'center',
-    marginBottom:20
+    marginBottom: Platform.OS === 'web' ? 16 : 20
   },
   catTxt:{ color:'#FFF', fontSize:20, fontWeight:'700' },
 
