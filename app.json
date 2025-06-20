@@ -24,7 +24,10 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "build": {
+        "basePath": "/"
+      }
     },
     "plugins": [
       "expo-router",
@@ -40,8 +43,7 @@
       "expo-sqlite"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "baseUrl": "/CellClassApp"
+      "typedRoutes": true
     },
     "extra": {
       "router": {},

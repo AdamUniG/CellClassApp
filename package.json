@@ -2,7 +2,6 @@
   "name": "hcopc",
   "main": "index.js",
   "version": "1.0.0",
-  "homepage": "https://AdamUniG.github.io/CellClassApp",
   "scripts": {
     "start": "expo start",
     "start:web": "expo start --web",
@@ -11,9 +10,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build:web": "expo export --platform web",
-    "predeploy": "npm run build:web",
-    "deploy": "gh-pages --nojekyll -d dist"
+    "build": "expo export --platform web",
+    "deploy": "firebase deploy --only hosting"
+
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
